@@ -1,105 +1,140 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import 'bootstrap/dist/css/bootstrap.min.css';
 
 const Dashboard = () => {
-    const Ticket = [
-        "Bus",
-        "AC Bus ",
-        // "Railway",
-        // "Flite",
-        // "hellicopter",
-        // "Bike",
-        // "ticket1",
-        // "ticket2"
-    ]
+    const Ticket = ["Bus", "AC Bus"];
+    const count = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
 
-    const count = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    const [selectedTicket, setSelectedTicket] = useState(null);
+    const [tempSeats, setTempSeats] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [bookedSeats, setBookedSeats] = useState({});
 
-    const [bookTicket, setBookTicket] = useState([]);
-    const [bookSeat, setBookSeat] = useState([]);
+    useEffect(() => {
+        const stored = localStorage.getItem("bookedSeats");
+        if (stored) {
+            setBookedSeats(JSON.parse(stored));
+        } else {
+            const initial = {};
+            Ticket.forEach(t => initial[t] = []);
+            setBookedSeats(initial);
+        }
+    }, []);
 
-    const handleSubmit = (item) => {
-        // localStorage.setItem("dataaa",setBookTicket((prev) => [...prev, item]))
-        setBookTicket((prev) => [...prev, item])
-        // setBookTicket((prev) => [...prev, item])
-        // localStorage.setItem("itemInputBox", item);
-    }
-    localStorage.setItem("data", Ticket)
-    console.log("data", localStorage.getItem("data"))
-    console.log("bookTicket", bookTicket)
+    useEffect(() => {
+        localStorage.setItem("bookedSeats", JSON.stringify(bookedSeats));
+    }, [bookedSeats]);
 
-    const handleBook = (item) => {
-        setBookSeat((prev) => [...prev, item])
-    }
+    const handleOpenModal = (ticket) => {
+        setSelectedTicket(ticket);
+        setTempSeats([]);
+        setShowModal(true);
+    };
+
+    const handleCloseModal = () => {
+        setShowModal(false);
+        setSelectedTicket(null);
+        setTempSeats([]);
+    };
+
+    const handleSeatSelect = (seat) => {
+        const alreadyBooked = bookedSeats[selectedTicket]?.includes(seat);
+        if (alreadyBooked) return;
+
+        if (!tempSeats.includes(seat)) {
+            setTempSeats([...tempSeats, seat]);
+        } else {
+            setTempSeats(tempSeats.filter(s => s !== seat));
+        }
+    };
+
+    const handleSubmit = () => {
+        if (tempSeats.length > 0 && selectedTicket) {
+            const updated = {
+                ...bookedSeats,
+                [selectedTicket]: [
+                    ...(bookedSeats[selectedTicket] || []),
+                    ...tempSeats,
+                ],
+            };
+            setBookedSeats(updated);
+        }
+        handleCloseModal();
+    };
+
     return (
-        <div>
-            <div className='col-8 m-auto'>
-                <div className='row m-3'>
-                    {Ticket?.map((item) => (
-                        <div className='col-3 m-3 tickect'>
-                            <h5>book your ticket</h5>
-                            <p>{item}</p>
-                            {/* <button className='btn-primary btn mt-2'}>book Ticket</button> */}
-
-                            {/* <!-- Button trigger modal --> */}
-                            <button type="button" onClick={() => { handleSubmit(item) }} class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal">
-
+        <div className='container'>
+            <h3 className='mt-4'>Available Tickets</h3>
+            <div className='row mt-3'>
+                {Ticket.map((item, index) => (
+                    <div className='col-4 mb-4' key={index}>
+                        <div className='border p-3'>
+                            <h5>{item}</h5>
+                            <button
+                                className='btn btn-primary mt-2'
+                                onClick={() => handleOpenModal(item)}
+                            >
+                                Book {item}
                             </button>
-
-                            {/* <!-- Modal --> */}
-                            <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <div className='row'>
-                                                {count?.map((item) => (
-                                                    <div className='col-2' onClick={() => { handleBook(item) }}>{item}</div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            <button type="button" class="btn btn-primary">Save changes</button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
-                    ))}
-                </div>
-
-                {/* here display book ticket list */}
-                <div>
-                    <h5>Display book ticket list</h5>
-                    <div className='row m-3'>
-                        {bookTicket?.map((item) => (
-                            <div className='col-3 m-3 tickect'>
-                                <p>book ticket {item}</p>
-                            </div>
-                        ))}
-
                     </div>
-                    <div className='row m-3'>
-                        {bookSeat?.map((item) => (
-                            <div className='col-3 m-3 tickect'>
-                                <p>book seat NO. {item}</p>
-                            </div>
-                        ))}
-
-                    </div>
-                </div>
-
-
+                ))}
             </div>
 
+            <h4 className='mt-5'>Booked Seats</h4>
+            <div className='row'>
+                {Ticket.map((ticket, index) => (
+                    bookedSeats[ticket]?.length > 0 && (
+                        <div className='col-4 mb-4' key={index}>
+                            <div className='border p-3'>
+                                <p><strong>Ticket Type:</strong> {ticket}</p>
+                                <p><strong>Seats:</strong> {bookedSeats[ticket].sort((a, b) => a - b).join(", ")}</p>
+                            </div>
+                        </div>
+                    )
+                ))}
+            </div>
 
+            {/* Modal */}
+            {showModal && selectedTicket && (
+                <div className="modal d-block bg-dark bg-opacity-75" tabIndex="-1">
+                    <div className="modal-dialog modal-lg modal-dialog-centered">
+                        <div className="modal-content">
+                            <div className="modal-header">
+                                <h5 className="modal-title">Select seats for {selectedTicket}</h5>
+                                <button type="button" className="btn-close" onClick={handleCloseModal}></button>
+                            </div>
+                            <div className="modal-body">
+                                <div className='row'>
+                                    {count.map((seat) => {
+                                        const alreadyBooked = bookedSeats[selectedTicket]?.includes(seat);
+                                        const isSelected = tempSeats.includes(seat);
 
-
+                                        return (
+                                            <div
+                                                key={seat}
+                                                className={`col-2 m-1 p-2 text-center border rounded 
+                                                    ${alreadyBooked ? 'bg-danger text-white' :
+                                                        isSelected ? 'bg-success text-white' : ''}`}
+                                                style={{ cursor: alreadyBooked ? 'not-allowed' : 'pointer' }}
+                                                onClick={() => handleSeatSelect(seat)}
+                                            >
+                                                {seat}
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            <div className="modal-footer">
+                                <button className="btn btn-secondary" onClick={handleCloseModal}>Cancel</button>
+                                <button className="btn btn-success" onClick={handleSubmit}>Confirm Booking</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
-}
+};
 
 export default Dashboard;
